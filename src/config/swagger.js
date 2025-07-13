@@ -14,15 +14,15 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
-        description: 'Development server'
-      },
-      {
         url: 'https://hospient-api.vercel.app',
         description: 'Production server'
       },
       {
-        url: 'https://hospient-api.vercel.app',
+        url: 'http://localhost:3000',
+        description: 'Development server'
+      },
+      {
+        url: 'https://hospient-ka5pyrw9t-emretokatli-gmailcoms-projects.vercel.app',
         description: 'Development server'
       }
     ],
