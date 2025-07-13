@@ -1,54 +1,63 @@
 const { Sequelize } = require('sequelize');
 const config = require('../config/database');
 
-// Create sequelize instance but don't connect immediately
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    host: config.host,
-    dialect: 'mysql',
-    logging: false,
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    },
-    retry: {
-      max: 3
-    }
+// Lazy load sequelize instance to avoid immediate database connection
+let sequelize = null;
+
+const getSequelize = () => {
+  if (!sequelize) {
+    sequelize = new Sequelize(
+      config.database,
+      config.username,
+      config.password,
+      {
+        host: config.host,
+        dialect: 'mysql',
+        logging: false,
+        pool: {
+          max: 5,
+          min: 0,
+          acquire: 30000,
+          idle: 10000
+        },
+        retry: {
+          max: 3
+        }
+      }
+    );
   }
-);
+  return sequelize;
+};
 
 // Lazy load models to avoid immediate database connection
 let models = {};
 
 const loadModels = () => {
   if (Object.keys(models).length === 0) {
-    models.Member = require('./member.model')(sequelize);
-    models.Guest = require('./guest.model')(sequelize);
-    models.Organization = require('./organization.model')(sequelize);
-    models.Hotel = require('./hotel.model')(sequelize);
-    models.Room = require('./room.model')(sequelize);
-    models.Restaurant = require('./restaurant.model')(sequelize);
-    models.Menu = require('./menu.model')(sequelize);
-    models.FileCategory = require('./file-category.model')(sequelize);
-    models.File = require('./file.model')(sequelize);
-    models.Images = require('./images.js')(sequelize);
-    models.ConciergeCategory = require('./concierge_category.model')(sequelize);
-    models.ConciergeRequest = require('./concierge_request.model')(sequelize);
-    models.Offer = require('./offer.model')(sequelize);
-    models.Communication = require('./communication.model')(sequelize);
-    models.Meeting = require('./meeting.model')(sequelize);
-    models.MeetingRoom = require('./meeting-room.model')(sequelize);
-    models.WellnessSpa = require('./wellness-spa.model')(sequelize);
-    models.HotelLandingPage = require('./hotel-landing-page.model')(sequelize);
-    models.HotelSections = require('./hotel-sections.model')(sequelize);
-    models.ChatMessage = require('./chat_message.model')(sequelize);
-    models.Integration = require('./integration.model')(sequelize);
-    models.IntegrationLog = require('./integration_log.model')(sequelize);
+    const sequelizeInstance = getSequelize();
+    
+    models.Member = require('./member.model')(sequelizeInstance);
+    models.Guest = require('./guest.model')(sequelizeInstance);
+    models.Organization = require('./organization.model')(sequelizeInstance);
+    models.Hotel = require('./hotel.model')(sequelizeInstance);
+    models.Room = require('./room.model')(sequelizeInstance);
+    models.Restaurant = require('./restaurant.model')(sequelizeInstance);
+    models.Menu = require('./menu.model')(sequelizeInstance);
+    models.FileCategory = require('./file-category.model')(sequelizeInstance);
+    models.File = require('./file.model')(sequelizeInstance);
+    models.Images = require('./images.js')(sequelizeInstance);
+    models.ConciergeCategory = require('./concierge_category.model')(sequelizeInstance);
+    models.ConciergeRequest = require('./concierge_request.model')(sequelizeInstance);
+    models.Offer = require('./offer.model')(sequelizeInstance);
+    models.Communication = require('./communication.model')(sequelizeInstance);
+    models.Meeting = require('./meeting.model')(sequelizeInstance);
+    models.MeetingRoom = require('./meeting-room.model')(sequelizeInstance);
+    models.WellnessSpa = require('./wellness-spa.model')(sequelizeInstance);
+    models.HotelLandingPage = require('./hotel-landing-page.model')(sequelizeInstance);
+    models.HotelSections = require('./hotel-sections.model')(sequelizeInstance);
+    models.ChatMessage = require('./chat_message.model')(sequelizeInstance);
+    models.Integration = require('./integration.model')(sequelizeInstance);
+    models.IntegrationLog = require('./integration_log.model')(sequelizeInstance);
 
     // Define relationships
     models.Member.hasOne(models.Organization, { foreignKey: 'member_id' });
@@ -166,16 +175,11 @@ const loadModels = () => {
   return models;
 };
 
-// Export a function that loads models when needed
-const getModels = () => {
-  return loadModels();
-};
-
 // Export individual models with lazy loading
 const createModelExports = () => {
   const models = loadModels();
   return {
-    sequelize,
+    sequelize: getSequelize(),
     Member: models.Member,
     Guest: models.Guest,
     Organization: models.Organization,
