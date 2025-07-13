@@ -17,12 +17,6 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "DATABASE_URL": "mysql://dbu1445585:BJK1903bjk1903!!@database-5018207746.webspace-host.com:port/dbs14426978"
-  },
-  "functions": {
-    "src/index.js": {
-      "maxDuration": 30
-    }
+    "NODE_ENV": "production"
   }
 } 
