@@ -7,7 +7,6 @@ let sequelize = null;
 const getSequelize = () => {
   if (!sequelize) {
     try {
-      // Ensure mysql2 is available
       require('mysql2');
       
       sequelize = new Sequelize(
