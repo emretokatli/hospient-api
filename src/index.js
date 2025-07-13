@@ -3,7 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
-const { sequelize } = require('./models');
+// Remove database import to avoid immediate connection
+// const { sequelize } = require('./models');
 const { publicRateLimit, authRateLimit } = require('./middleware/rate-limit.middleware');
 // Remove WebSocket server import for serverless compatibility
 // const NotificationWebSocketServer = require('./websocket/notificationServer');
@@ -35,7 +36,8 @@ const webhookRoutes = require('./routes/webhook.routes');
 // Remove HTTP and Socket.io imports for serverless compatibility
 // const http = require('http');
 // const socketIo = require('socket.io');
-const { ChatMessage, Hotel } = require('./models');
+// Remove model imports to avoid immediate database connection
+// const { ChatMessage, Hotel } = require('./models');
 
 // Public routes (no authentication required)
 const publicHotelRoutes = require('./routes/public.hotel.routes');
@@ -60,6 +62,55 @@ app.use(express.urlencoded({ extended: true }));
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+
+// Add a simple test endpoint that doesn't require database
+app.get('/api/test', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'API is working without database connection',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    mysql2: 'Available (not tested)',
+    sequelize: 'Available (not tested)'
+  });
+});
+
+// Add a health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Hospient API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Add a debug endpoint for troubleshooting
+app.get('/api/debug', (req, res) => {
+  res.json({
+    status: 'debug',
+    environment: process.env.NODE_ENV || 'development',
+    database: {
+      host: process.env.DB_HOST ? 'SET' : 'NOT SET',
+      port: process.env.DB_PORT ? 'SET' : 'NOT SET',
+      name: process.env.DB_NAME ? 'SET' : 'NOT SET',
+      user: process.env.DB_USER ? 'SET' : 'NOT SET',
+      password: process.env.DB_PASSWORD ? 'SET' : 'NOT SET'
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+      expires: process.env.JWT_EXPIRES_IN || 'NOT SET'
+    },
+    cors: {
+      origin: process.env.CORS_ORIGIN || 'NOT SET'
+    },
+    vercel: {
+      isVercel: !!process.env.VERCEL,
+      functionName: process.env.VERCEL_FUNCTION_NAME || 'NOT SET'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Public routes (no authentication required) - for Customer-UI
 app.use('/api/public/hotels', publicRateLimit, publicHotelRoutes);
@@ -107,53 +158,6 @@ app.use('/api/integrations', integrationRoutes);
 // Webhook routes (no authentication required - uses signature validation)
 app.use('/api/webhooks', webhookRoutes);
 
-// Add a health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Hospient API is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Add a debug endpoint for troubleshooting
-app.get('/api/debug', (req, res) => {
-  res.json({
-    status: 'debug',
-    environment: process.env.NODE_ENV || 'development',
-    database: {
-      host: process.env.DB_HOST ? 'SET' : 'NOT SET',
-      port: process.env.DB_PORT ? 'SET' : 'NOT SET',
-      name: process.env.DB_NAME ? 'SET' : 'NOT SET',
-      user: process.env.DB_USER ? 'SET' : 'NOT SET',
-      password: process.env.DB_PASSWORD ? 'SET' : 'NOT SET'
-    },
-    jwt: {
-      secret: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-      expires: process.env.JWT_EXPIRES_IN || 'NOT SET'
-    },
-    cors: {
-      origin: process.env.CORS_ORIGIN || 'NOT SET'
-    },
-    vercel: {
-      isVercel: !!process.env.VERCEL,
-      functionName: process.env.VERCEL_FUNCTION_NAME || 'NOT SET'
-    },
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Add a simple test endpoint that doesn't require database
-app.get('/api/test', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'API is working without database connection',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -191,13 +195,17 @@ const PORT = process.env.PORT || 3000;
 // Database connection and server start - Modified for serverless
 const startServer = async () => {
   try {
-    // Test database connection
-    await sequelize.authenticate();
-    console.log('Database connected successfully');
-    
-    // Sync database (be careful with alter: true in production)
-    await sequelize.sync({ alter: false });
-    console.log('Database synced successfully');
+    // Only try to connect to database if we're not in serverless environment
+    if (!process.env.VERCEL) {
+      const { sequelize } = require('./models');
+      // Test database connection
+      await sequelize.authenticate();
+      console.log('Database connected successfully');
+      
+      // Sync database (be careful with alter: true in production)
+      await sequelize.sync({ alter: false });
+      console.log('Database synced successfully');
+    }
     
     // For serverless deployment, we don't start a server
     // Vercel will handle the serverless function

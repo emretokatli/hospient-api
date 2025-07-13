@@ -1,6 +1,7 @@
 const { Sequelize } = require('sequelize');
 const config = require('../config/database');
 
+// Create sequelize instance but don't connect immediately
 const sequelize = new Sequelize(
   config.database,
   config.username,
@@ -9,167 +10,195 @@ const sequelize = new Sequelize(
     host: config.host,
     dialect: 'mysql',
     logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    },
+    retry: {
+      max: 3
+    }
   }
 );
 
-const Member = require('./member.model')(sequelize);
-const Guest = require('./guest.model')(sequelize);
-const Organization = require('./organization.model')(sequelize);
-const Hotel = require('./hotel.model')(sequelize);
-const Room = require('./room.model')(sequelize);
-const Restaurant = require('./restaurant.model')(sequelize);
-const Menu = require('./menu.model')(sequelize);
-const FileCategory = require('./file-category.model')(sequelize);
-const File = require('./file.model')(sequelize);
-const Images = require('./images.js')(sequelize);
-const ConciergeCategory = require('./concierge_category.model')(sequelize);
-const ConciergeRequest = require('./concierge_request.model')(sequelize);
-const Offer = require('./offer.model')(sequelize);
-const Communication = require('./communication.model')(sequelize);
-const Meeting = require('./meeting.model')(sequelize);
-const MeetingRoom = require('./meeting-room.model')(sequelize);
-const WellnessSpa = require('./wellness-spa.model')(sequelize);
-const HotelLandingPage = require('./hotel-landing-page.model')(sequelize);
-const HotelSections = require('./hotel-sections.model')(sequelize);
-const ChatMessage = require('./chat_message.model')(sequelize);
-const Integration = require('./integration.model')(sequelize);
-const IntegrationLog = require('./integration_log.model')(sequelize);
+// Lazy load models to avoid immediate database connection
+let models = {};
 
-// Define relationships
-Member.hasOne(Organization, { foreignKey: 'member_id' });
+const loadModels = () => {
+  if (Object.keys(models).length === 0) {
+    models.Member = require('./member.model')(sequelize);
+    models.Guest = require('./guest.model')(sequelize);
+    models.Organization = require('./organization.model')(sequelize);
+    models.Hotel = require('./hotel.model')(sequelize);
+    models.Room = require('./room.model')(sequelize);
+    models.Restaurant = require('./restaurant.model')(sequelize);
+    models.Menu = require('./menu.model')(sequelize);
+    models.FileCategory = require('./file-category.model')(sequelize);
+    models.File = require('./file.model')(sequelize);
+    models.Images = require('./images.js')(sequelize);
+    models.ConciergeCategory = require('./concierge_category.model')(sequelize);
+    models.ConciergeRequest = require('./concierge_request.model')(sequelize);
+    models.Offer = require('./offer.model')(sequelize);
+    models.Communication = require('./communication.model')(sequelize);
+    models.Meeting = require('./meeting.model')(sequelize);
+    models.MeetingRoom = require('./meeting-room.model')(sequelize);
+    models.WellnessSpa = require('./wellness-spa.model')(sequelize);
+    models.HotelLandingPage = require('./hotel-landing-page.model')(sequelize);
+    models.HotelSections = require('./hotel-sections.model')(sequelize);
+    models.ChatMessage = require('./chat_message.model')(sequelize);
+    models.Integration = require('./integration.model')(sequelize);
+    models.IntegrationLog = require('./integration_log.model')(sequelize);
 
-Organization.hasMany(Hotel, { foreignKey: 'organization_id' });
-Hotel.belongsTo(Organization, { foreignKey: 'organization_id' });
+    // Define relationships
+    models.Member.hasOne(models.Organization, { foreignKey: 'member_id' });
 
-Hotel.hasMany(Room, { foreignKey: 'hotel_id' });
-Room.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.Organization.hasMany(models.Hotel, { foreignKey: 'organization_id' });
+    models.Hotel.belongsTo(models.Organization, { foreignKey: 'organization_id' });
 
-Hotel.hasMany(Restaurant, { foreignKey: 'hotel_id' });
-Restaurant.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.Hotel.hasMany(models.Room, { foreignKey: 'hotel_id' });
+    models.Room.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Hotel.hasMany(Menu, { foreignKey: 'hotel_id' });
-Menu.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.Hotel.hasMany(models.Restaurant, { foreignKey: 'hotel_id' });
+    models.Restaurant.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Restaurant.hasMany(Menu, { foreignKey: 'restaurant_id' });
-Menu.belongsTo(Restaurant, { foreignKey: 'restaurant_id' });
+    models.Hotel.hasMany(models.Menu, { foreignKey: 'hotel_id' });
+    models.Menu.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// File relationships
-FileCategory.hasMany(File, { foreignKey: 'category_id' });
-File.belongsTo(FileCategory, { foreignKey: 'category_id', as: 'category' });
+    models.Restaurant.hasMany(models.Menu, { foreignKey: 'restaurant_id' });
+    models.Menu.belongsTo(models.Restaurant, { foreignKey: 'restaurant_id' });
 
-Organization.hasMany(File, { foreignKey: 'organization_id' });
-File.belongsTo(Organization, { foreignKey: 'organization_id' });
+    // File relationships
+    models.FileCategory.hasMany(models.File, { foreignKey: 'category_id' });
+    models.File.belongsTo(models.FileCategory, { foreignKey: 'category_id', as: 'category' });
 
-Hotel.hasMany(File, { foreignKey: 'hotel_id' });
-File.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.Organization.hasMany(models.File, { foreignKey: 'organization_id' });
+    models.File.belongsTo(models.Organization, { foreignKey: 'organization_id' });
 
-File.belongsTo(Member, { foreignKey: 'member_id' });
+    models.Hotel.hasMany(models.File, { foreignKey: 'hotel_id' });
+    models.File.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Hotel.hasMany(Images, { foreignKey: 'hotel_id' });
-Images.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.File.belongsTo(models.Member, { foreignKey: 'member_id' });
 
-Restaurant.hasMany(Images, { foreignKey: 'hotel_id' });
-Images.belongsTo(Restaurant, { foreignKey: 'hotel_id' });
+    models.Hotel.hasMany(models.Images, { foreignKey: 'hotel_id' });
+    models.Images.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Concierge relationships
-ConciergeCategory.hasMany(ConciergeRequest, {
-  foreignKey: 'category_id',
-});
-ConciergeRequest.belongsTo(ConciergeCategory, {
-  foreignKey: 'category_id',
-});
+    models.Restaurant.hasMany(models.Images, { foreignKey: 'hotel_id' });
+    models.Images.belongsTo(models.Restaurant, { foreignKey: 'hotel_id' });
 
-Hotel.hasMany(ConciergeRequest, { foreignKey: 'hotel_id' });
-ConciergeRequest.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Concierge relationships
+    models.ConciergeCategory.hasMany(models.ConciergeRequest, {
+      foreignKey: 'category_id',
+    });
+    models.ConciergeRequest.belongsTo(models.ConciergeCategory, {
+      foreignKey: 'category_id',
+    });
 
-// Offer relationships
-Hotel.hasMany(Offer, { foreignKey: 'hotel_id' });
-Offer.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.Hotel.hasMany(models.ConciergeRequest, { foreignKey: 'hotel_id' });
+    models.ConciergeRequest.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Communication relationships
-Hotel.hasMany(Communication, { foreignKey: 'hotel_id' });
-Communication.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Offer relationships
+    models.Hotel.hasMany(models.Offer, { foreignKey: 'hotel_id' });
+    models.Offer.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Self-referencing relationship for chat replies
-Communication.hasMany(Communication, { 
-  foreignKey: 'response_to_id', 
-  as: 'replies' 
-});
-Communication.belongsTo(Communication, { 
-  foreignKey: 'response_to_id', 
-  as: 'parent_message' 
-});
+    // Communication relationships
+    models.Hotel.hasMany(models.Communication, { foreignKey: 'hotel_id' });
+    models.Communication.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Guest relationships
-Guest.hasMany(ConciergeRequest, { foreignKey: 'guest_id' });
-ConciergeRequest.belongsTo(Guest, { foreignKey: 'guest_id' });
+    // Self-referencing relationship for chat replies
+    models.Communication.hasMany(models.Communication, { 
+      foreignKey: 'response_to_id', 
+      as: 'replies' 
+    });
+    models.Communication.belongsTo(models.Communication, { 
+      foreignKey: 'response_to_id', 
+      as: 'parent_message' 
+    });
 
-// Meeting relationships
-Hotel.hasMany(Meeting, { foreignKey: 'hotel_id' });
-Meeting.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Guest relationships
+    models.Guest.hasMany(models.ConciergeRequest, { foreignKey: 'guest_id' });
+    models.ConciergeRequest.belongsTo(models.Guest, { foreignKey: 'guest_id' });
 
-// MeetingRoom relationships
-Hotel.hasMany(MeetingRoom, { foreignKey: 'hotel_id' });
-MeetingRoom.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Meeting relationships
+    models.Hotel.hasMany(models.Meeting, { foreignKey: 'hotel_id' });
+    models.Meeting.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Member.hasMany(Meeting, { foreignKey: 'created_by' });
-Meeting.belongsTo(Member, { foreignKey: 'created_by', as: 'creator' });
+    // MeetingRoom relationships
+    models.Hotel.hasMany(models.MeetingRoom, { foreignKey: 'hotel_id' });
+    models.MeetingRoom.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Member.hasMany(Meeting, { foreignKey: 'approved_by' });
-Meeting.belongsTo(Member, { foreignKey: 'approved_by', as: 'approver' });
+    models.Member.hasMany(models.Meeting, { foreignKey: 'created_by' });
+    models.Meeting.belongsTo(models.Member, { foreignKey: 'created_by', as: 'creator' });
 
-// Wellness & Spa relationships
-Hotel.hasMany(WellnessSpa, { foreignKey: 'hotel_id' });
-WellnessSpa.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    models.Member.hasMany(models.Meeting, { foreignKey: 'approved_by' });
+    models.Meeting.belongsTo(models.Member, { foreignKey: 'approved_by', as: 'approver' });
 
-// Hotel Landing Page relationships
-Hotel.hasMany(HotelLandingPage, { foreignKey: 'hotel_id' });
-HotelLandingPage.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Wellness & Spa relationships
+    models.Hotel.hasMany(models.WellnessSpa, { foreignKey: 'hotel_id' });
+    models.WellnessSpa.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Chat Message relationships
-Hotel.hasMany(ChatMessage, { foreignKey: 'hotel_id' });
-ChatMessage.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Hotel Landing Page relationships
+    models.Hotel.hasMany(models.HotelLandingPage, { foreignKey: 'hotel_id' });
+    models.HotelLandingPage.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Hotel Sections relationships
-Hotel.hasMany(HotelSections, { foreignKey: 'hotel_id' });
-HotelSections.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Chat Message relationships
+    models.Hotel.hasMany(models.ChatMessage, { foreignKey: 'hotel_id' });
+    models.ChatMessage.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-// Integration relationships
-Hotel.hasMany(Integration, { foreignKey: 'hotel_id' });
-Integration.belongsTo(Hotel, { foreignKey: 'hotel_id' });
+    // Hotel Sections relationships
+    models.Hotel.hasMany(models.HotelSections, { foreignKey: 'hotel_id' });
+    models.HotelSections.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Member.hasMany(Integration, { foreignKey: 'created_by' });
-Integration.belongsTo(Member, { foreignKey: 'created_by', as: 'creator' });
+    // Integration relationships
+    models.Hotel.hasMany(models.Integration, { foreignKey: 'hotel_id' });
+    models.Integration.belongsTo(models.Hotel, { foreignKey: 'hotel_id' });
 
-Member.hasMany(Integration, { foreignKey: 'updated_by' });
-Integration.belongsTo(Member, { foreignKey: 'updated_by', as: 'updater' });
+    models.Member.hasMany(models.Integration, { foreignKey: 'created_by' });
+    models.Integration.belongsTo(models.Member, { foreignKey: 'created_by', as: 'creator' });
 
-// Integration Log relationships
-Integration.hasMany(IntegrationLog, { foreignKey: 'integration_id' });
-IntegrationLog.belongsTo(Integration, { foreignKey: 'integration_id' });
+    models.Member.hasMany(models.Integration, { foreignKey: 'updated_by' });
+    models.Integration.belongsTo(models.Member, { foreignKey: 'updated_by', as: 'updater' });
 
-module.exports = {
-  sequelize,
-  Member,
-  Guest,
-  Organization,
-  Hotel,
-  Room,
-  Restaurant,
-  Menu,
-  FileCategory,
-  File,
-  Images,
-  ConciergeCategory,
-  ConciergeRequest,
-  Offer,
-  Communication,
-  Meeting,
-  MeetingRoom,
-  WellnessSpa,
-  HotelLandingPage,
-  HotelSections,
-  ChatMessage,
-  Integration,
-  IntegrationLog
-}; 
+    // Integration Log relationships
+    models.Integration.hasMany(models.IntegrationLog, { foreignKey: 'integration_id' });
+    models.IntegrationLog.belongsTo(models.Integration, { foreignKey: 'integration_id' });
+  }
+  return models;
+};
+
+// Export a function that loads models when needed
+const getModels = () => {
+  return loadModels();
+};
+
+// Export individual models with lazy loading
+const createModelExports = () => {
+  const models = loadModels();
+  return {
+    sequelize,
+    Member: models.Member,
+    Guest: models.Guest,
+    Organization: models.Organization,
+    Hotel: models.Hotel,
+    Room: models.Room,
+    Restaurant: models.Restaurant,
+    Menu: models.Menu,
+    FileCategory: models.FileCategory,
+    File: models.File,
+    Images: models.Images,
+    ConciergeCategory: models.ConciergeCategory,
+    ConciergeRequest: models.ConciergeRequest,
+    Offer: models.Offer,
+    Communication: models.Communication,
+    Meeting: models.Meeting,
+    MeetingRoom: models.MeetingRoom,
+    WellnessSpa: models.WellnessSpa,
+    HotelLandingPage: models.HotelLandingPage,
+    HotelSections: models.HotelSections,
+    ChatMessage: models.ChatMessage,
+    Integration: models.Integration,
+    IntegrationLog: models.IntegrationLog
+  };
+};
+
+module.exports = createModelExports(); 

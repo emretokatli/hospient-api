@@ -1,5 +1,4 @@
-// Vercel API route handler
-const app = require('../src/index.js');
+const app = require('../src/index');
 
-// Export the app for Vercel serverless functions
+// Export the app for Vercel
 module.exports = app; 
