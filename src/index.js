@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
-// Remove database import to avoid immediate connection
-// const { sequelize } = require('./models');
+// Use lazy-loaded models to avoid immediate database connection
+const loadModels = require('./models/lazy-models');
 const { publicRateLimit, authRateLimit } = require('./middleware/rate-limit.middleware');
 // Remove WebSocket server import for serverless compatibility
 // const NotificationWebSocketServer = require('./websocket/notificationServer');
@@ -197,13 +197,13 @@ const startServer = async () => {
   try {
     // Only try to connect to database if we're not in serverless environment
     if (!process.env.VERCEL) {
-      const { sequelize } = require('./models');
+      const models = loadModels();
       // Test database connection
-      await sequelize.authenticate();
+      await models.sequelize.authenticate();
       console.log('Database connected successfully');
       
       // Sync database (be careful with alter: true in production)
-      await sequelize.sync({ alter: false });
+      await models.sequelize.sync({ alter: false });
       console.log('Database synced successfully');
     }
     

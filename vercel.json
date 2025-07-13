@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/index.js",
+      "src": "api/simple.js",
       "use": "@vercel/node",
       "config": {
         "installCommand": "npm install",
@@ -13,14 +13,14 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/src/index.js"
+      "dest": "/api/simple.js"
     }
   ],
   "env": {
     "NODE_ENV": "production"
   },
   "functions": {
-    "src/index.js": {
+    "api/simple.js": {
       "maxDuration": 30
     }
   }
