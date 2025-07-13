@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "superadmin",
+    "password": "MelisEnes2404!!",
+    "database": "hospient_db_test",
+    "host": "localhost",
+    "dialect": "mysql",
+    "port": 3306
+  },
+  "test": {
+    "username": "superadmin",
+    "password": "MelisEnes2404!!",
+    "database": "hospient_db_test",
+    "host": "localhost",
+    "dialect": "mysql",
+    "port": 3306
+  },
+  "production": {
+    "username": "superadmin",
+    "password": "MelisEnes2404!!",
+    "database": "hospient_db_test",
+    "host": "localhost",
+    "dialect": "mysql",
+    "port": 3306
+  }
+} 

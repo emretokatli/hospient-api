@@ -1,0 +1,50 @@
+{
+  "name": "hospient-api",
+  "version": "1.0.0",
+  "description": "API Hospient.com",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "build": "echo 'No build step required for Node.js backend'",
+    "deploy": "bash deploy.sh",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:stop": "pm2 stop hospient-api-live",
+    "pm2:restart": "pm2 restart hospient-api-live",
+    "pm2:logs": "pm2 logs hospient-api-live",
+    "pm2:test:start": "pm2 start ecosystem.config.js --only hospient-api-test",
+    "pm2:test:stop": "pm2 stop hospient-api-test",
+    "pm2:test:restart": "pm2 restart hospient-api-test",
+    "pm2:test:logs": "pm2 logs hospient-api-test",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "concierge:migrate": "node run-concierge-migration.js",
+    "postinstall": "echo 'Installation completed successfully'"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.11.2",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.0",
+    "multer": "^2.0.1",
+    "mysql2": "^3.2.0",
+    "sequelize": "^6.31.0",
+    "socket.io": "^4.8.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.6.2",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22"
+  },
+  "config": {
+    "ignore-scripts": true
+  }
+}
