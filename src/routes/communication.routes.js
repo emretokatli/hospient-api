@@ -145,35 +145,38 @@ const stringifyJsonFields = (data) => {
 // Helper function to send real-time notifications via WebSocket
 const sendRealTimeNotification = (notification, recipientType, recipientId) => {
   try {
-    const wsServer = global.notificationWebSocketServer;
-    if (!wsServer) {
-      console.warn('WebSocket server not available for real-time notification');
-      return;
-    }
+    // Temporarily disabled for Vercel serverless compatibility
+    // const wsServer = global.notificationWebSocketServer;
+    // if (!wsServer) {
+    //   console.warn('WebSocket server not available for real-time notification');
+    //   return;
+    // }
 
     // Parse JSON fields for WebSocket transmission
     const parsedNotification = parseJsonFields(notification);
 
-    switch (recipientType) {
-      case 'guest':
-        if (recipientId) {
-          wsServer.sendToGuest(recipientId, parsedNotification);
-        }
-        break;
-      case 'all':
-      case 'walkin':
-        wsServer.sendToAllGuests(parsedNotification);
-        break;
-      case 'specific':
-        if (recipientId) {
-          wsServer.sendToGuest(recipientId, parsedNotification);
-        }
-        break;
-      default:
-        console.warn(`Unknown recipient type: ${recipientType}`);
-    }
+    // Temporarily disabled WebSocket functionality for Vercel deployment
+    // switch (recipientType) {
+    //   case 'guest':
+    //     if (recipientId) {
+    //       wsServer.sendToGuest(recipientId, parsedNotification);
+    //     }
+    //     break;
+    //   case 'all':
+    //   case 'walkin':
+    //     wsServer.sendToAllGuests(parsedNotification);
+    //     break;
+    //   case 'specific':
+    //     if (recipientId) {
+    //       wsServer.sendToGuest(recipientId, parsedNotification);
+    //     }
+    //     break;
+    //   default:
+    //     console.warn(`Unknown recipient type: ${recipientType}`);
+    // }
 
-    console.log(`Real-time notification sent via WebSocket to ${recipientType}${recipientId ? ` (ID: ${recipientId})` : ''}`);
+    console.log(`Real-time notification would be sent via WebSocket to ${recipientType}${recipientId ? ` (ID: ${recipientId})` : ''} (disabled for Vercel)`);
+    console.log('Note: Use external WebSocket services like Socket.io Cloud or Pusher for real-time features');
   } catch (error) {
     console.error('Error sending real-time notification:', error);
   }
@@ -1618,19 +1621,26 @@ router.post('/push-notifications', async (req, res) => {
  */
 router.get('/websocket/stats', async (req, res) => {
   try {
-    const wsServer = global.notificationWebSocketServer;
-    if (!wsServer) {
-      return res.status(503).json({
-        status: 'error',
-        message: 'WebSocket server not available'
-      });
-    }
+    // Temporarily disabled for Vercel serverless compatibility
+    // const wsServer = global.notificationWebSocketServer;
+    // if (!wsServer) {
+    //   return res.status(503).json({
+    //     status: 'error',
+    //     message: 'WebSocket server not available'
+    //   });
+    // }
 
-    const stats = wsServer.getStats();
+    // const stats = wsServer.getStats();
     
+    // Return mock data for Vercel deployment
     res.json({
       status: 'success',
-      data: stats
+      data: {
+        totalConnections: 0,
+        uniqueGuests: 0,
+        guests: [],
+        message: 'WebSocket functionality disabled for Vercel deployment'
+      }
     });
   } catch (error) {
     console.error('Error getting WebSocket stats:', error);
@@ -1687,35 +1697,37 @@ router.post('/websocket/test', async (req, res) => {
       });
     }
 
-    const wsServer = global.notificationWebSocketServer;
-    if (!wsServer) {
-      return res.status(503).json({
-        status: 'error',
-        message: 'WebSocket server not available'
-      });
-    }
+    // Temporarily disabled for Vercel serverless compatibility
+    // const wsServer = global.notificationWebSocketServer;
+    // if (!wsServer) {
+    //   return res.status(503).json({
+    //     status: 'error',
+    //     message: 'WebSocket server not available'
+    //   });
+    // }
 
-    const testNotification = {
-      id: Date.now(),
-      hotel_id: 1,
-      type: 'notification',
-      category: 'general',
-      title: 'Test Notification',
-      message: message,
-      sender_type: 'hotel',
-      recipient_type: 'guest',
-      recipient_id: guestId,
-      priority: 'normal',
-      status: 'sent',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // const testNotification = {
+    //   id: Date.now(),
+    //   hotel_id: 1,
+    //   type: 'notification',
+    //   category: 'general',
+    //   title: 'Test Notification',
+    //   message: message,
+    //   sender_type: 'hotel',
+    //   recipient_type: 'guest',
+    //   recipient_id: guestId,
+    //   priority: 'normal',
+    //   status: 'sent',
+    //   created_at: new Date().toISOString(),
+    //   updated_at: new Date().toISOString()
+    // };
 
-    wsServer.sendToGuest(guestId, testNotification);
+    // wsServer.sendToGuest(guestId, testNotification);
 
     res.json({
       status: 'success',
-      message: `Test notification sent to guest ${guestId}`
+      message: `Test notification would be sent to guest ${guestId} (disabled for Vercel deployment)`,
+      note: 'Use external WebSocket services like Socket.io Cloud or Pusher for real-time features'
     });
   } catch (error) {
     console.error('Error sending test notification:', error);

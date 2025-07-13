@@ -345,14 +345,18 @@ router.post('/admin/hotel/:hotelId/send', authMiddleware, async (req, res) => {
     });
     
     // Broadcast to user's room via WebSocket
-    if (global.io) {
-      global.io.to(`user:${user}`).emit('chat message', message);
+    // Temporarily disabled for Vercel serverless compatibility
+    // if (global.io) {
+    //   global.io.to(`user:${user}`).emit('chat message', message);
       
-      // Also broadcast to hotel room if hotel slug is provided
-      if (hotel.hotel_slug) {
-        global.io.to(`hotel:${hotel.hotel_slug}`).emit('chat message', message);
-      }
-    }
+    //   // Also broadcast to hotel room if hotel slug is provided
+    //   if (hotel.hotel_slug) {
+    //     global.io.to(`hotel:${hotel.hotel_slug}`).emit('chat message', message);
+    //   }
+    // }
+    
+    // Note: WebSocket functionality is disabled for Vercel deployment
+    // Use external WebSocket services like Socket.io Cloud or Pusher for real-time features
     
     res.status(201).json(message);
   } catch (err) {
