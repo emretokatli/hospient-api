@@ -747,7 +747,7 @@ router.post('/:id/test', async (req, res) => {
  *                       type: boolean
  *                     processed:
  *                       type: integer
- *                     success:
+ *                     successful:
  *                       type: integer
  *                     failed:
  *                       type: integer

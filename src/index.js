@@ -144,6 +144,16 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
+// Add a simple test endpoint that doesn't require database
+app.get('/api/test', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'API is working without database connection',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -195,7 +205,9 @@ const startServer = async () => {
     
   } catch (error) {
     console.error('Database connection failed:', error);
-    process.exit(1);
+    console.log('API will continue without database connection');
+    // Don't exit process - allow API to work for basic endpoints
+    // process.exit(1);
   }
 };
 
