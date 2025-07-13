@@ -5,7 +5,8 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const { sequelize } = require('./models');
 const { publicRateLimit, authRateLimit } = require('./middleware/rate-limit.middleware');
-const NotificationWebSocketServer = require('./websocket/notificationServer');
+// Remove WebSocket server import for serverless compatibility
+// const NotificationWebSocketServer = require('./websocket/notificationServer');
 const authRoutes = require('./routes/auth.routes');
 const guestAuthRoutes = require('./routes/guest.auth.routes');
 const guestRoutes = require('./routes/guest.routes');
@@ -31,8 +32,9 @@ const hotelSectionsRoutes = require('./routes/hotel-sections.route');
 const chatRoutes = require('./routes/chat.routes');
 const integrationRoutes = require('./routes/integration.routes');
 const webhookRoutes = require('./routes/webhook.routes');
-const http = require('http');
-const socketIo = require('socket.io');
+// Remove HTTP and Socket.io imports for serverless compatibility
+// const http = require('http');
+// const socketIo = require('socket.io');
 const { ChatMessage, Hotel } = require('./models');
 
 // Public routes (no authentication required)
@@ -53,8 +55,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve uploaded files (Note: Vercel has read-only filesystem)
+// app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
@@ -105,6 +107,16 @@ app.use('/api/integrations', integrationRoutes);
 // Webhook routes (no authentication required - uses signature validation)
 app.use('/api/webhooks', webhookRoutes);
 
+// Add a health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Hospient API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -139,97 +151,39 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Database connection and server start
-sequelize.sync({ alter: false })
-  .then(() => {
+// Database connection and server start - Modified for serverless
+const startServer = async () => {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
     console.log('Database connected successfully');
-    const server = http.createServer(app);
-    const io = socketIo(server, { cors: { origin: '*' } });
-
-    // Make io globally available for chat routes
-    global.io = io;
-
-    io.on('connection', (socket) => {
-      const { user, room: slug } = socket.handshake.query;
-      
-      // Join room based on user email (required)
-      if (user) {
-        socket.join(`user:${user}`);
-      }
-      
-      // Join room based on hotel slug (optional)
-      if (slug) {
-        socket.join(`hotel:${slug}`);
-      }
-
-      socket.on('chat message', async (msg) => {
-        // Validate required fields
-        if (!msg.user) {
-          console.error('Chat message missing required user email');
-          return;
-        }
-        
-        let hotel_id = null;
-        let hotel_slug = null;
-        
-        // If hotel_id is provided directly, use it
-        if (msg.hotel_id) {
-          hotel_id = msg.hotel_id;
-          hotel_slug = msg.hotel_slug || null;
-        }
-        // Otherwise, look up hotel by slug
-        else if (msg.hotel_slug) {
-          try {
-            const hotel = await Hotel.findOne({ where: { hotel_slug: msg.hotel_slug } });
-            if (hotel) {
-              hotel_id = hotel.id;
-              hotel_slug = msg.hotel_slug;
-            } else {
-              console.warn(`Hotel not found for slug: ${msg.hotel_slug}`);
-            }
-          } catch (error) {
-            console.error('Error finding hotel:', error);
-          }
-        }
-        
-        try {
-          // Save to DB
-          const message = await ChatMessage.create({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-            hotel_id,
-            hotel_slug,
-            room: msg.room_number || null,
-            user: msg.user, // user (email) is required
-            text: msg.text,
-            createdAt: new Date(),
-          });
-          
-          // Broadcast to user's room
-          io.to(`user:${msg.user}`).emit('chat message', message);
-          
-          // Broadcast to hotel room if hotel slug is provided
-          if (hotel_slug) {
-            io.to(`hotel:${hotel_slug}`).emit('chat message', message);
-          }
-        } catch (error) {
-          console.error('Error saving chat message:', error);
-        }
-      });
-    });
-
-    // Initialize WebSocket server for real-time notifications
-    const notificationWebSocketServer = new NotificationWebSocketServer(server);
     
-    // Make WebSocket server available globally for communication routes
-    global.notificationWebSocketServer = notificationWebSocketServer;
+    // Sync database (be careful with alter: true in production)
+    await sequelize.sync({ alter: false });
+    console.log('Database synced successfully');
     
-    console.log('WebSocket notification server initialized');
+    // For serverless deployment, we don't start a server
+    // Vercel will handle the serverless function
+    console.log('Serverless function ready');
+    
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    process.exit(1);
+  }
+};
 
+// Start the server only if not in serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  startServer().then(() => {
+    const server = require('http').createServer(app);
     server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
+      console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch((error) => {
-    console.error('Unable to connect to the database:', error);
-  }); 
+  });
+} else {
+  // For Vercel serverless, just initialize the database connection
+  startServer();
+}
+
+// Export the app for Vercel
+module.exports = app; 
