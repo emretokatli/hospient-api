@@ -8,15 +8,9 @@ let models = null;
 const getSequelize = () => {
   if (!sequelize) {
     try {
-      // Ensure mysql2 is available
       require('mysql2');
-      
-      sequelize = new Sequelize(
-        config.database,
-        config.username,
-        config.password,
-        {
-          host: config.host,
+      if (process.env.DATABASE_URL) {
+        sequelize = new Sequelize(process.env.DATABASE_URL, {
           dialect: 'mysql',
           dialectModule: require('mysql2'),
           logging: false,
@@ -29,11 +23,31 @@ const getSequelize = () => {
           retry: {
             max: 3
           }
-        }
-      );
+        });
+      } else {
+        sequelize = new Sequelize(
+          config.database,
+          config.username,
+          config.password,
+          {
+            host: config.host,
+            dialect: 'mysql',
+            dialectModule: require('mysql2'),
+            logging: false,
+            pool: {
+              max: 5,
+              min: 0,
+              acquire: 30000,
+              idle: 10000
+            },
+            retry: {
+              max: 3
+            }
+          }
+        );
+      }
     } catch (error) {
       console.error('Error initializing Sequelize:', error.message);
-      // Return a mock sequelize instance for serverless environments
       sequelize = {
         authenticate: async () => {
           throw new Error('Database connection not available');

@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/simple.js",
+      "src": "src/index.js",
       "use": "@vercel/node",
       "config": {
         "installCommand": "npm install",
@@ -13,14 +13,15 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/api/simple.js"
+      "dest": "/src/index.js"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "DATABASE_URL": "mysql://dbu1445585:BJK1903bjk1903!!@database-5018207746.webspace-host.com:port/dbs14426978"
   },
   "functions": {
-    "api/simple.js": {
+    "src/index.js": {
       "maxDuration": 30
     }
   }
