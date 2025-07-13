@@ -18,5 +18,15 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "servers": [
+    {
+      "url": "https://hospient-api.vercel.app",
+      "description": "Production server"
+    },
+    {
+      "url": "https://hospient-api.vercel.app",
+      "description": "Development server"
+    }
+  ]
 } 
