@@ -53,7 +53,7 @@ const publicHotelSectionsRoutes = require('./routes/public.hotel-sections.route'
 const app = express();
 
 // Trust the first proxy (Vercel, etc.)
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors());
